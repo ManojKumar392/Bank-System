@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 	"testing"
 	"time"
 
@@ -44,4 +45,61 @@ func TestGetAccount(t *testing.T) {
 	require.Equal(t, account1.Balance, account2.Balance)
 	require.Equal(t, account1.Currency, account2.Currency)
 	require.WithinDuration(t, account1.CreatedAt, account2.CreatedAt, time.Second)
+}
+
+func TestUpdateAccount(t *testing.T) {
+	account1 := createRandomAccount(t)
+
+	args := UpdateAccountParams{
+		ID:      account1.ID,
+		Balance: util.RandomMoney(),
+	}
+
+	account2, err := testQueries.UpdateAccount(context.Background(), args)
+	require.NoError(t, err)
+
+	require.Equal(t, account1.ID, account2.ID)
+	require.Equal(t, account1.Owner, account2.Owner)
+	require.Equal(t, args.Balance, account2.Balance)
+	require.Equal(t, account1.Currency, account2.Currency)
+	require.WithinDuration(t, account1.CreatedAt, account2.CreatedAt, time.Second)
+
+}
+
+func TestDeleteAccount(t *testing.T) {
+	account1 := createRandomAccount(t)
+	err := testQueries.DeleteAccount(context.Background(), account1.ID)
+
+	require.NoError(t, err)
+
+	account2, err := testQueries.GetAccount(context.Background(), account1.ID)
+	require.Error(t, err)
+	require.EqualError(t, err, sql.ErrNoRows.Error())
+	require.Empty(t, account2)
+}
+
+func TestListAccount(t *testing.T) {
+	n := 10
+	var accounts []Account
+	for i := 0; i < n; i++ {
+		accounts = append(accounts, createRandomAccount(t))
+	}
+
+	args := ListAccountParams{
+		Limit:  5,
+		Offset: 5,
+	}
+
+	accounts2, err := testQueries.ListAccount(context.Background(), args)
+	require.NoError(t, err)
+
+	require.Len(t, accounts2, 5)
+
+	for i := 0; i < 5; i++ {
+		require.Equal(t, accounts[i+5].ID, accounts2[i].ID)
+		require.Equal(t, accounts[i+5].Owner, accounts2[i].Owner)
+		require.Equal(t, accounts[i+5].Balance, accounts2[i].Balance)
+		require.Equal(t, accounts[i+5].Currency, accounts2[i].Currency)
+		require.WithinDuration(t, accounts[i+5].CreatedAt, accounts2[i].CreatedAt, time.Second)
+	}
 }

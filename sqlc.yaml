@@ -10,3 +10,4 @@ packages:
     emit_interface: false
     emit_exact_table_names: false
     emit_empty_slices: false
+    sql_package: "database/sql"
