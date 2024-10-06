@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"log"
+	"os"
 	"testing"
 
 	_ "github.com/lib/pq"
@@ -23,5 +24,5 @@ func TestMain(m *testing.M) {
 
 	testQueries = New(conn)
 
-	m.Run()
+	os.Exit(m.Run())
 }
