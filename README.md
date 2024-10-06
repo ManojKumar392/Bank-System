@@ -2,4 +2,4 @@
 
 Project in making
 
-Planned tech stack :- Golang + Postgres + Kubernetes + gRPC
+Planned tech stack :- Golang(with GORM) + Postgres + Kubernetes + gRPC
