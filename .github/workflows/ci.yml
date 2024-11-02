@@ -42,5 +42,5 @@ jobs:
 
     - name: Run Tests
       env:
-        DB_SOURCE: "postgresql://root:secret@localhost:5433/testdb?sslmode=disable"
+        DB_SOURCE: "postgresql://root:secret@localhost:5433/simple_bank?sslmode=disable"
       run: make test
