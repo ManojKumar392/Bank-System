@@ -1,43 +1,45 @@
-name: ci-test
+name: CI Test
 
-on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+on: [push, pull_request]
 
 jobs:
-
-  build:
+  test:
     runs-on: ubuntu-latest
 
     services:
       postgres:
-        image: postgres:12-alpine
-        env:
-          POSTGRES_USER: root
-          POSTGRES_PASSWORD: secret
-          POSTGRES_DB: simple_bank
+        image: postgres:latest
         ports:
-          - 5433:5432
+          - 5432:5432
+        env:
+          POSTGRES_DB: testdb
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
         options: >-
-          --health-cmd="pg_isready -U root"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/testdb?sslmode=disable
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v2
 
     - name: Set up Go
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@v2
       with:
-        go-version: '1.20.0'
+        go-version: 1.18
 
-    - name: Wait for PostgreSQL to be ready
-      run: until pg_isready -h localhost -p 5433; do echo "Waiting for postgres..."; sleep 1; done
+    - name: Install dependencies
+      run: go mod download
 
-    - name: Run Tests
-      env:
-        DB_SOURCE: "postgresql://root:secret@localhost:5433/simple_bank?sslmode=disable"
-      run: make test
+    - name: Run database migrations
+      run: |
+        go install github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+        migrate -path db/migration -database $DATABASE_URL -verbose up
+
+    - name: Run tests
+      run: go test -v ./...
