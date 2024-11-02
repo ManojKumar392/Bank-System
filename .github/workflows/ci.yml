@@ -13,13 +13,34 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:12-alpine   # Use the desired PostgreSQL version
+        env:
+          POSTGRES_USER: root
+          POSTGRES_PASSWORD: secret
+          POSTGRES_DB: simple_bank
+        ports:
+          - 5433:5433   # Map container port 5432 to host port 5433
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
     steps:
     - uses: actions/checkout@v4
 
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
-        go-version: '1.20'
+        go-version: '1.20.0'
 
-    - name: Test
+    - name: Wait for PostgreSQL to be ready
+      run: until pg_isready -h localhost -p 5433; do echo "Waiting for postgres..."; sleep 1; done
+
+    - name: Run Tests
+      env:
+        DB_SOURCE: "postgresql://postgres:password@localhost:5433/testdb?sslmode=disable"
       run: make test
